@@ -1,5 +1,5 @@
 [package]
-name = "ssh_modules"
+name = "ansible_modules"
 version = "0.1.0"
 authors = ["0xdeafbeef <0xdeafbeef@users.noreply.github.com>"]
 edition = "2018"
@@ -12,3 +12,7 @@ serde = { version = "1.0", features = ["derive"] }
 toml = "0.5"
 ssh2="0.7.0"
 walkdir = "2.3.1"
+base64 = "0.12.3"
+[[test]]
+name = "integration"
+path = "tests/lib.rs"
