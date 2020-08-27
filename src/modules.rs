@@ -11,7 +11,7 @@ use std::path::{Path, PathBuf};
 use toml::from_str;
 use walkdir::{DirEntry, WalkDir};
 
-#[derive(Debug)]
+#[derive(Debug,Clone)]
 enum ExecType {
     Bin,
     Python,
@@ -58,8 +58,7 @@ pub struct ModuleProps {
 /// python -c python code
 /// ```
 
-#[derive(Debug)]
-enum ModuleContent {
+#[derive(Debug,Clone)]enum ModuleContent {
     Shell(HashMap<String, String>),
     Binary(PathBuf),
     Python(String),
@@ -70,7 +69,7 @@ pub enum CommandOutput {
     Single(String),
 }
 
-#[derive(Debug)]
+#[derive(Debug,Clone)]
 struct Module {
     module_type: ExecType,
     module_content: ModuleContent,
@@ -225,7 +224,7 @@ impl Module {
         }
     }
 }
-#[derive(Debug)]
+#[derive(Debug,Clone)]
 pub struct ModuleTree {
     tree: HashMap<String, Module>,
 }
