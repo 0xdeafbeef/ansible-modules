@@ -244,7 +244,7 @@ impl ModuleTree {
             .map(|name| (Module::new(name.path()), name)) //try to create module
             .filter_map(|(x, name)| {
                 if let Err(e) = x {
-                    eprintln!("Error reading config: {}", e);
+                    eprintln!("Error parsing module {}: {}",name.file_name().to_string_lossy(), e);
                     None
                 } else {
                     Some((
