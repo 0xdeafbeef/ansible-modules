@@ -105,6 +105,8 @@ pub trait ConnectionProps {
     fn get_timeout(&self) -> u32;
     fn tcp_synchronization(&self);
     fn agent_synchronization(&self);
+    fn tcp_release(&self);
+    fn agent_release(&self);
 }
 
 impl Module {
@@ -157,6 +159,7 @@ impl Module {
         sync.agent_synchronization(); //todo fixme
         auth.auth(&sess)
             .map_err(|e| Error::msg(format!("Authentication Error {}", e)))?;
+        sync.agent_release();
         Ok(sess)
     }
 
@@ -215,13 +218,15 @@ impl Module {
     where
         A: Display + ToSocketAddrs + Send + Sync + Clone + Debug + Eq + std::hash::Hash + ToString,
     {
-        match self.module_type {
+        let result =match self.module_type {
             ExecType::Bash => self
                 .execute_bash_script(ip, auth, sync)
                 .map(CommandOutput::Multi),
             ExecType::Python => unimplemented!(),
             ExecType::Bin => unimplemented!(),
-        }
+        };
+        sync.tcp_release();
+        result
     }
 }
 #[derive(Debug,Clone)]
