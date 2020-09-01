@@ -235,6 +235,11 @@ pub struct ModuleTree {
 }
 
 impl ModuleTree {
+    pub fn check_module(&self, module_name: &str) -> bool
+    {
+        self.tree.contains_key(module_name)
+
+    }
     pub fn new(path: &Path) -> Self {
         let root = WalkDir::new(path).max_depth(1);
         let map: HashMap<_, _> = root
