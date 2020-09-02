@@ -241,12 +241,12 @@ impl ModuleTree {
 
     }
     pub fn new(path: &Path) -> Self {
-        let root = WalkDir::new(path).max_depth(1);
+        let root = WalkDir::new(&path).max_depth(1);
         let map: HashMap<_, _> = root
             .into_iter()
             .filter_map(|e| e.ok()) //filter erros
             .filter(|f| ModuleProps::check_filename(f)) //leave only mods
-            .map(|name| (Module::new(name.path()), name)) //try to create module
+            .map(|name| (Module::new( &path.join( name.path())), name)) //try to create module
             .filter_map(|(x, name)| {
                 if let Err(e) = x {
                     eprintln!("Error parsing module {}: {}",name.file_name().to_string_lossy(), e);
