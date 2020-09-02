@@ -110,7 +110,7 @@ pub trait ConnectionProps {
 }
 
 impl Module {
-    pub fn new(path: &Path) -> Result<Module, Error> {
+    pub fn new(path: &Path, root: &Path) -> Result<Module, Error> {
         let file_2_string = |p: &Path| -> Result<String, std::io::Error> {
             let mut file = File::open(p)?;
             let mut content = String::new();
@@ -119,6 +119,10 @@ impl Module {
         };
 
         let res: ModuleProps = from_str(&file_2_string(path)?)?;
+        let res = ModuleProps{
+            module_type: res.module_type,
+            exec_path: root.join(res.exec_path)
+        };
         let content = match res.module_type {
             ExecType::Bin => ModuleContent::Binary(res.exec_path),
             ExecType::Python => {
@@ -241,12 +245,12 @@ impl ModuleTree {
 
     }
     pub fn new(path: &Path) -> Self {
-        let root = WalkDir::new(path).max_depth(1);
+        let root = WalkDir::new(&path).max_depth(1);
         let map: HashMap<_, _> = root
             .into_iter()
             .filter_map(|e| e.ok()) //filter erros
             .filter(|f| ModuleProps::check_filename(f)) //leave only mods
-            .map(|name| (Module::new(name.path()), name)) //try to create module
+            .map(|name| (Module::new(name.path(), &path), name)) //try to create module
             .filter_map(|(x, name)| {
                 if let Err(e) = x {
                     eprintln!("Error parsing module {}: {}",name.file_name().to_string_lossy(), e);
