@@ -101,12 +101,10 @@ impl AuthType {
     }
 }
 
-pub trait ConnectionProps {
+pub trait ConnectionProps<A> {
     fn get_timeout(&self) -> u32;
-    fn tcp_synchronization(&self);
-    fn agent_synchronization(&self);
-    fn tcp_release(&self);
-    fn agent_release(&self);
+    fn tcp_synchronization(&self)->A;
+    fn agent_synchronization(&self)->A;
 }
 
 impl Module {
@@ -143,16 +141,16 @@ impl Module {
         })
     }
 
-    fn obtain_connection_and_auth<A>(
+    fn obtain_connection_and_auth<A,Guard>(
         &self,
         ip: A,
         auth: AuthType,
-        sync: &dyn ConnectionProps,
+        sync: &dyn ConnectionProps<Guard>,
     ) -> Result<Session, Error>
     where
         A: Display + ToSocketAddrs + Send + Sync + Clone + Debug + Eq + std::hash::Hash + ToString,
+        Guard: Send
     {
-        sync.tcp_synchronization();
         let tcp = TcpStream::connect(ip)?;
         let mut sess =
             Session::new().map_err(|_e| Error::msg("Error initializing session".to_string()))?;
@@ -160,21 +158,21 @@ impl Module {
         sess.set_timeout(sync.get_timeout());
         sess.handshake()
             .map_err(|e| Error::msg(format!("Failed establishing handshake: {}", e)))?;
-        sync.agent_synchronization(); //todo fixme
+       let guard =  sync.agent_synchronization(); //todo fixme
         auth.auth(&sess)
             .map_err(|e| Error::msg(format!("Authentication Error {}", e)))?;
-        sync.agent_release();
         Ok(sess)
     }
 
-    fn execute_python_script<A>(
+    fn execute_python_script<A,Guard>(
         &self,
         ip: A,
         auth: AuthType,
-        sync: &dyn ConnectionProps,
+        sync: &dyn ConnectionProps<Guard>,
     ) -> Result<String, Error>
     where
         A: Display + ToSocketAddrs + Send + Sync + Clone + Debug + Eq + std::hash::Hash + ToString,
+        Guard: Send
     {
         let session = self.obtain_connection_and_auth(ip, auth, sync)?;
         let content = match &self.module_content {
@@ -188,14 +186,15 @@ impl Module {
         Ok(result)
     }
 
-    fn execute_bash_script<A>(
+    fn execute_bash_script<A, Guard>(
         &self,
         ip: A,
         auth: AuthType,
-        sync: &dyn ConnectionProps,
+        sync: &dyn ConnectionProps< Guard>,
     ) -> Result<HashMap<String, String>, Error>
     where
         A: Display + ToSocketAddrs + Send + Sync + Clone + Debug + Eq + std::hash::Hash + ToString,
+        Guard: Send
     {
         let session = self.obtain_connection_and_auth(ip, auth, sync)?;
         let content = match &self.module_content {
@@ -213,15 +212,17 @@ impl Module {
         Ok(res_map)
     }
 
-    pub fn execute<A>(
+    pub fn execute<A,Guard>(
         &self,
         ip: A,
         auth: AuthType,
-        sync: &dyn ConnectionProps,
+        sync: &dyn ConnectionProps<Guard>,
     ) -> Result<CommandOutput, Error>
     where
         A: Display + ToSocketAddrs + Send + Sync + Clone + Debug + Eq + std::hash::Hash + ToString,
+        Guard: Send
     {
+        let guard = sync.tcp_synchronization();
         let result =match self.module_type {
             ExecType::Bash => self
                 .execute_bash_script(ip, auth, sync)
@@ -229,7 +230,6 @@ impl Module {
             ExecType::Python => unimplemented!(),
             ExecType::Bin => unimplemented!(),
         };
-        sync.tcp_release();
         result
     }
 }
@@ -276,24 +276,26 @@ impl ModuleTree {
 
         ModuleTree { tree: map }
     }
-    pub fn run_module<A>(
+    pub fn run_module<A,Guard>(
         &self,
         module_name: &str,
         ip: A,
         auth: AuthType,
-        sync: &dyn ConnectionProps,
+        sync: &dyn ConnectionProps<Guard>,
     ) -> Result<CommandOutput, Error>
     where
         A: Display + ToSocketAddrs + Send + Sync + Clone + Debug + Eq + std::hash::Hash + ToString,
+        Guard: Send
     {
         self.tree
             .get(module_name)
             .ok_or_else(|| Error::msg(format!("Module {} not found", &module_name)))?
             .execute(ip, auth, sync)
     }
-    pub fn run_all<A>(&self, ip: A, auth: AuthType, sync: &dyn ConnectionProps) -> Result<(), Error>
+    pub fn run_all<A,Guard>(&self, ip: A, auth: AuthType, sync: &dyn ConnectionProps<Guard>) -> Result<(), Error>
     where
         A: Display + ToSocketAddrs + Send + Sync + Clone + Debug + Eq + std::hash::Hash + ToString,
+        Guard: Send
     {
         unimplemented!();
     }
