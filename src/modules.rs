@@ -162,7 +162,7 @@ impl Module {
         if let Err(e)=  sess.handshake()
         {
             sync.agent_release();
-            return e.map_err(|e| Error::msg(format!("Failed establishing handshake: {}", e)));
+            return Err(e.into());
         }
         if let Err(e) =
         auth.auth(&sess){
