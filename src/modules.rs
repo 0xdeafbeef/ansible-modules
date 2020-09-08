@@ -176,7 +176,10 @@ impl Module {
         A: Display + ToSocketAddrs + Send + Sync + Clone + Debug + Eq + std::hash::Hash + ToString,
     {
        let res =self.connection_inernal(ip,auth,sync);
-        sync.agent_release();
+        if res.is_ok()
+        {
+            sync.agent_release();
+        };
         res
     }
 
