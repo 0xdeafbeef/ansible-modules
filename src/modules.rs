@@ -161,8 +161,12 @@ impl Module {
         sess.handshake()
             .map_err(|e| Error::msg(format!("Failed establishing handshake: {}", e)))?;
         sync.agent_synchronization(); //todo fixme
-        auth.auth(&sess)
-            .map_err(|e| Error::msg(format!("Authentication Error {}", e)))?;
+        if let Err(e) =
+        auth.auth(&sess){
+            sync.agent_release();
+            return Err(e);
+        }
+        sync.agent_release();
         Ok(sess)
     }
 
@@ -176,10 +180,6 @@ impl Module {
         A: Display + ToSocketAddrs + Send + Sync + Clone + Debug + Eq + std::hash::Hash + ToString,
     {
        let res =self.connection_inernal(ip,auth,sync);
-        if res.is_ok()
-        {
-            sync.agent_release();
-        };
         res
     }
 
