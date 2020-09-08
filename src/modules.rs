@@ -158,9 +158,12 @@ impl Module {
             Session::new().map_err(|_e| Error::msg("Error initializing session".to_string()))?;
         sess.set_tcp_stream(tcp);
         sess.set_timeout(sync.get_timeout());
-        sess.handshake()
-            .map_err(|e| Error::msg(format!("Failed establishing handshake: {}", e)))?;
         sync.agent_synchronization(); //todo fixme
+        if let Err(e)=  sess.handshake()
+        {
+            sync.agent_release();
+            return e.map_err(|e| Error::msg(format!("Failed establishing handshake: {}", e)));
+        }
         if let Err(e) =
         auth.auth(&sess){
             sync.agent_release();
