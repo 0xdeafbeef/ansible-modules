@@ -223,8 +223,8 @@ impl Module {
             _ => unreachable!(),
         };
         let mut res_map = HashMap::new();
-        let mut channel = session.channel_session()?;
         for (command_name, command) in content {
+            let mut channel = session.channel_session()?;
             let mut result_string = String::new();
             channel.exec(&command)?;
             channel.read_to_string(&mut result_string)?;
